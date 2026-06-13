@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내 상황에 맞는 강의 찾기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    background: #f7f6f3;
+    color: #1a1a1a;
+    min-height: 100vh;
+    padding: 0 0 4rem;
+  }
+
+  .hero {
+    background: #1a1a2e;
+    color: #fff;
+    padding: 3rem 1.5rem 2.5rem;
+    text-align: center;
+  }
+  .hero-label {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #a78bfa;
+    margin-bottom: 0.75rem;
+  }
+  .hero h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 0.75rem;
+  }
+  .hero p {
+    font-size: 15px;
+    color: #c4b5fd;
+    max-width: 460px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 0;
+  }
+
+  .filter-label {
+    font-size: 12px;
+    color: #888;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 2rem;
+  }
+  .tag-btn {
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #555;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .tag-btn:hover { border-color: #a78bfa; color: #6d28d9; background: #f5f3ff; }
+  .tag-btn.active { background: #6d28d9; color: #fff; border-color: #6d28d9; }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 14px;
+    padding: 1.1rem 1.25rem;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.07); border-color: #c4b5fd; }
+  .card.expanded { border-color: #7c3aed; box-shadow: 0 2px 16px rgba(109,40,217,0.1); }
+
+  .card-header { display: flex; align-items: flex-start; gap: 10px; }
+  .card-icon {
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .card-q {
+    font-size: 14px; font-weight: 600; color: #1a1a1a;
+    line-height: 1.55; flex: 1;
+  }
+  .card-tag {
+    display: inline-block; font-size: 11px; padding: 2px 9px;
+    border-radius: 10px; margin-top: 5px; font-weight: 500;
+  }
+  .chevron {
+    margin-left: auto; font-size: 16px; color: #aaa;
+    flex-shrink: 0; transition: transform 0.2s; margin-top: 2px;
+  }
+  .card.expanded .chevron { transform: rotate(180deg); }
+
+  .card-lectures {
+    margin-top: 14px; padding-top: 14px;
+    border-top: 1px solid #f0f0f0;
+    display: none;
+  }
+  .card.expanded .card-lectures { display: block; }
+  .lectures-label {
+    font-size: 11px; color: #aaa; margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: 0.07em;
+  }
+
+  .lecture-pill {
+    display: inline-block; font-size: 12px; padding: 5px 11px;
+    border-radius: 20px; margin: 3px 4px 3px 0;
+    border: 1px solid #e0e0e0;
+    background: #f7f7f7; color: #555;
+    text-decoration: none; cursor: default;
+    font-family: inherit; transition: filter 0.12s;
+  }
+  .lecture-pill.prime { background: #f5f3ff; color: #5b21b6; border-color: #c4b5fd; }
+  .lecture-pill.free  { background: #f0fdf4; color: #166534; border-color: #86efac; }
+  .lecture-pill.consult { background: #fff7ed; color: #9a3412; border-color: #fdba74; }
+  .lecture-pill.membership { background: #eff6ff; color: #1e40af; border-color: #93c5fd; }
+  .lecture-pill.has-link { cursor: pointer; }
+  .lecture-pill.has-link:hover { filter: brightness(0.93); text-decoration: underline; }
+  .link-icon { font-size: 11px; margin-left: 3px; opacity: 0.65; vertical-align: middle; }
+
+  .legend {
+    margin-top: 2.5rem;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+  }
+  .legend-title { font-size: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 12px; }
+  .legend-items { display: flex; flex-wrap: wrap; gap: 8px; }
+  .legend-item {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: #555;
+  }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .empty { padding: 2.5rem; text-align: center; color: #aaa; font-size: 14px; }
+
+  @media (max-width: 480px) {
+    .hero { padding: 2.5rem 1.25rem 2rem; }
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-label">강의 추천 가이드</div>
+  <h1>내 상황에 맞는 강의 찾기</h1>
+  <p>지금 고민되는 상황을 선택하면<br>딱 맞는 강의를 바로 확인할 수 있어요.</p>
+</div>
+
+<div class="container">
+
+  <div class="filter-label">카테고리로 찾기</div>
+  <div class="filter-bar" id="filterBar">
+    <button class="tag-btn active" data-filter="all">전체 보기</button>
+    <button class="tag-btn" data-filter="내집마련">내 집 마련</button>
+    <button class="tag-btn" data-filter="재개발">재개발</button>
+    <button class="tag-btn" data-filter="투자">자산 / 투자</button>
+    <button class="tag-btn" data-filter="경매">경매</button>
+    <button class="tag-btn" data-filter="소액">소액투자</button>
+  </div>
+
+  <div class="cards-grid" id="cardsGrid"></div>
+
+  <div class="legend">
+    <div class="legend-title">강의 유형 안내</div>
+    <div class="legend-items">
+      <div class="legend-item"><div class="legend-dot" style="background:#5b21b6"></div>멤버십 PRIME 강의</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1e40af"></div>멤버십 정규강의</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#166534"></div>무료 강의</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#9a3412"></div>1:1 맞춤형 상담</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#888"></div>일반 강의</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const URLS = {
+  "부탈챌": "https://jdhlab.liveklass.com/classes/261749",
+  "임장챌": "https://jdhlab.liveklass.com/classes/290953",
+  "내집마련반": "https://jdhlab.liveklass.com/classes/290333",
+  "내집마련완성반": "https://jdhlab.liveklass.com/classes/261905",
+  "멤버십 정규 — 사이클과 부동산 투자": "https://jdhlab.liveklass.com/classes/303040/classroom/1343768/",
+  "멤버십 보너스 — 포지션별 투자 전략": "https://jdhlab.liveklass.com/classes/303040/classroom/1362029/",
+  "멤버십 PRIME — 물건추천 강의": "https://jdhlab.liveklass.com/classes/260656/classroom/1277196/",
+  "멤버십 PRIME — 2035 서울 부동산 전망": "https://jdhlab.liveklass.com/classes/260656/classroom/1271433/",
+  "경매&실전반": "https://jdhlab.liveklass.com/classes/285123",
+  "멤버십 정규강의": "https://jdhlab.liveklass.com/classes/303040/classroom/1343736/",
+  "1:1 맞춤형 상담": "https://cafe.naver.com/happy100soo/3016",
+  "사이클과 정비사업 투자": "https://jdhlab.liveklass.com/classes/303040/classroom/1343736/",
+  "멤버십 정규 강의": "https://jdhlab.liveklass.com/classes/303040",
+  "무료 강의 — 재개발 뭣이 중헌디?": "https://youtu.be/guUjAYG7lZ4?si=gtcGS2GXKX5U1tqn",
+};
+
+const data = [
+  {
+    q: "내 집 마련의 기준을 잘 모르겠어요.",
+    tags: ["내집마련"], icon: "🏠", iconBg: "#f0eeff",
+    tagLabel: "내 집 마련", tagBg: "#f0eeff", tagColor: "#5b21b6",
+    lectures: [
+      { name: "부탈챌", type: "" }, { name: "임장챌", type: "" },
+      { name: "내집마련반", type: "" }, { name: "내집마련완성반", type: "" },
+    ]
+  },
+  {
+    q: "내 집 마련을 하고 싶은데, 지금이 고점일까봐 걱정이 돼요.",
+    tags: ["내집마련"], icon: "📈", iconBg: "#eff6ff",
+    tagLabel: "내 집 마련", tagBg: "#f0eeff", tagColor: "#5b21b6",
+    lectures: [
+      { name: "내집마련반", type: "" }, { name: "내집마련완성반", type: "" },
+      { name: "멤버십 정규 — 사이클과 부동산 투자", type: "membership" },
+      { name: "멤버십 PRIME — 2035 서울 부동산 전망", type: "prime" },
+    ]
+  },
+  {
+    q: "어떤 방향으로 공부하며 자산을 늘려나가야 할지 모르겠어요.",
+    tags: ["투자"], icon: "🧭", iconBg: "#f0fdf4",
+    tagLabel: "자산 / 투자", tagBg: "#f0fdf4", tagColor: "#166534",
+    lectures: [
+      { name: "멤버십 보너스 — 포지션별 투자 전략", type: "membership" },
+      { name: "부탈챌", type: "" }, { name: "임장챌", type: "" },
+      { name: "내집마련반", type: "" },
+      { name: "멤버십 PRIME — 물건추천 강의", type: "prime" },
+    ]
+  },
+  {
+    q: "내 집 마련을 하더라도 수익률 높은 상품으로 잘 고르고 싶어요.",
+    tags: ["내집마련", "투자"], icon: "💎", iconBg: "#fffbeb",
+    tagLabel: "내 집 마련 / 투자", tagBg: "#fffbeb", tagColor: "#92400e",
+    lectures: [
+      { name: "내집마련반", type: "" }, { name: "내집마련완성반", type: "" },
+      { name: "경매&실전반", type: "" },
+      { name: "멤버십 PRIME — 물건추천 강의", type: "prime" },
+      { name: "1:1 맞춤형 상담", type: "consult" },
+    ]
+  },
+  {
+    q: "갈아타기를 잘 하고 싶어요.",
+    tags: ["내집마련", "투자"], icon: "🔄", iconBg: "#f0fdf4",
+    tagLabel: "갈아타기", tagBg: "#ecfdf5", tagColor: "#065f46",
+    lectures: [
+      { name: "내집마련반", type: "" }, { name: "내집마련완성반", type: "" },
+      { name: "경매&실전반", type: "" },
+      { name: "멤버십 정규강의", type: "membership" },
+      { name: "멤버십 PRIME — 물건추천 강의", type: "prime" },
+      { name: "1:1 맞춤형 상담", type: "consult" },
+    ]
+  },
+  {
+    q: "자산을 폭발적으로 늘리고 싶어요.",
+    tags: ["투자"], icon: "🚀", iconBg: "#fff1f2",
+    tagLabel: "자산 / 투자", tagBg: "#f0fdf4", tagColor: "#166534",
+    lectures: [
+      { name: "경매&실전반", type: "" },
+      { name: "멤버십 정규강의", type: "membership" },
+      { name: "멤버십 PRIME — 물건추천 강의", type: "prime" },
+      { name: "1:1 맞춤형 상담", type: "consult" },
+    ]
+  },
+  {
+    q: "재개발 투자에 관심 있는데 아는 게 거의 없는 초보예요.",
+    tags: ["재개발"], icon: "🏗️", iconBg: "#fffbeb",
+    tagLabel: "재개발", tagBg: "#fffbeb", tagColor: "#92400e",
+    lectures: [
+      { name: "무료 강의 — 재개발 뭣이 중헌디?", type: "free" },
+      { name: "부탈챌", type: "" }, { name: "임장챌", type: "" },
+      { name: "멤버십 정규 — 사이클과 부동산 투자", type: "membership" },
+      { name: "사이클과 정비사업 투자", type: "" },
+      { name: "멤버십 PRIME — 물건추천 강의", type: "prime" },
+      { name: "내집마련반", type: "" }, { name: "내집마련완성반", type: "" },
+    ]
+  },
+  {
+    q: "머리로는 재개발을 사야 한다는데, 막상 임장 가면 무서워서 못 사겠어요.",
+    tags: ["재개발"], icon: "😰", iconBg: "#fff1f2",
+    tagLabel: "재개발", tagBg: "#fffbeb", tagColor: "#92400e",
+    lectures: [
+      { name: "무료 강의 — 재개발 뭣이 중헌디?", type: "free" },
+      { name: "멤버십 정규 — 사이클과 부동산 투자", type: "membership" },
+      { name: "사이클과 정비사업 투자", type: "" },
+    ]
+  },
+  {
+    q: "돈은 부족하지만 소액으로 꼭 내 집 마련을 하고 싶어요.",
+    tags: ["소액", "내집마련"], icon: "💰", iconBg: "#f0fdf4",
+    tagLabel: "소액투자", tagBg: "#ecfdf5", tagColor: "#065f46",
+    lectures: [
+      { name: "부탈챌", type: "" }, { name: "임장챌", type: "" },
+      { name: "내집마련반", type: "" }, { name: "내집마련완성반", type: "" },
+      { name: "무료 강의 — 재개발 뭣이 중헌디?", type: "free" },
+      { name: "경매&실전반", type: "" },
+      { name: "멤버십 정규 강의", type: "membership" },
+      { name: "멤버십 PRIME — 물건추천 강의", type: "prime" },
+    ]
+  },
+  {
+    q: "경매로 싸게 매수하고 싶어요.",
+    tags: ["경매"], icon: "🔨", iconBg: "#eff6ff",
+    tagLabel: "경매", tagBg: "#eff6ff", tagColor: "#1e40af",
+    lectures: [
+      { name: "멤버십 보너스 — 포지션별 투자 전략", type: "membership" },
+      { name: "경매&실전반", type: "" },
+    ]
+  },
+];
+
+let activeFilter = "all";
+
+function getPillClass(type, hasUrl) {
+  let cls = "lecture-pill";
+  if (type === "prime") cls += " prime";
+  else if (type === "free") cls += " free";
+  else if (type === "consult") cls += " consult";
+  else if (type === "membership") cls += " membership";
+  if (hasUrl) cls += " has-link";
+  return cls;
+}
+
+function renderPill(l) {
+  const url = URLS[l.name];
+  if (url) {
+    return `<a href="${url}" target="_blank" rel="noopener" class="${getPillClass(l.type, true)}" onclick="event.stopPropagation()">${l.name}<i class="ti ti-external-link link-icon"></i></a>`;
+  }
+  return `<span class="${getPillClass(l.type, false)}">${l.name}</span>`;
+}
+
+function renderCards() {
+  const grid = document.getElementById("cardsGrid");
+  const filtered = activeFilter === "all" ? data : data.filter(d => d.tags.includes(activeFilter));
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="empty">해당 카테고리의 항목이 없습니다.</div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(item => `
+    <div class="card" onclick="this.classList.toggle('expanded')">
+      <div class="card-header">
+        <div class="card-icon" style="background:${item.iconBg}">${item.icon}</div>
+        <div style="flex:1">
+          <div class="card-q">${item.q}</div>
+          <span class="card-tag" style="background:${item.tagBg};color:${item.tagColor}">${item.tagLabel}</span>
+        </div>
+        <i class="ti ti-chevron-down chevron"></i>
+      </div>
+      <div class="card-lectures">
+        <div class="lectures-label">추천 강의</div>
+        ${item.lectures.map(l => renderPill(l)).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+
+document.getElementById("filterBar").addEventListener("click", e => {
+  const btn = e.target.closest(".tag-btn");
+  if (!btn) return;
+  activeFilter = btn.dataset.filter;
+  document.querySelectorAll(".tag-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderCards();
+});
+
+renderCards();
+</script>
+</body>
+</html>
